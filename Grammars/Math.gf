@@ -13,8 +13,7 @@ abstract Math = {
         NPconj : Conjunction -> NounPhrase -> NounPhrase -> NounPhrase ;
 
     -- Lexical entries
-        Two : NounPhrase ;
-        Three : NounPhrase ;
+        NPmkInt : Int -> NounPhrase ;
         Prime : Adjective ;
         Coprime : Adjective ;
         And, Or : Conjunction ;

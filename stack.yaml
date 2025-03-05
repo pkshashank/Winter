@@ -2,10 +2,9 @@ resolver: lts-20.26
 
 packages:
 - .
-
+notify-if-nix-on-path: false
 # so that `stack build --copy-bins` puts bin here
 local-bin-path: .
-
 extra-deps:
 - github: smucclaw/gf-core
   commit: edb55df7b0c4892ba0bac2817b5f493921c20c36

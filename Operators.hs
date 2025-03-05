@@ -1,3 +1,5 @@
+{-# LANGUAGE ImplicitParams #-}
+
 module Operators where
 import LogicalTheory
 import PrettyPrinter
@@ -97,3 +99,11 @@ joinMontague l1 l2
   | booleanOperationPossible (m l1) l2 = join (m l1) l2
   | booleanOperationPossible l1 (m l2) = join l1 (m l2)
   | otherwise = join (m l1) (m l2)
+
+
+
+
+--min :: LambdaTerm -> LambdaTerm -> LambdaTerm -- Type: ((S^n(e) t) t) (S^(n+1)(e) t)
+--min l1 l2 = case (typeOf l1, typeOf l2) of
+--    Arrow (snType n) t, Arrow (snType (n+1)) t -> meetMontague l1 l2
+--   _ -> error "Types do not match"

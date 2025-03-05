@@ -3,6 +3,11 @@ import Math
 import Data.Maybe (fromJust)
 import Translation
 import PrettyPrinter (prettyPrint)
+import System.Process (callCommand)
+import qualified Data.Text.Lazy as T
+import qualified Data.Text.Lazy.IO as TIO
+
+
 
 main :: IO ()
 main = do
@@ -13,10 +18,21 @@ main = do
 
 
   let pgfTree = head $ parse pgf lang (fromJust $ readType "Sentence") content
-  let haskellTree = Math.fg pgfTree :: Math.GSentence
-  putStr "Read and converted to haskell \n"
+  producePNG pgf pgfTree
   
-  let formula = translate haskellTree
+  putStr "1. PARSE TREE (ast.png): "
+  putStrLn (showExpr [mkCId "Sentence"] pgfTree)
+  let haskellTree = Math.fg pgfTree :: Math.GSentence
+  putStrLn "2. Performing semantic translation..."
+  
+  formula <- translate haskellTree
   print $ prettyPrint formula
+  return ()
 
+
+producePNG :: PGF -> PGF.Tree -> IO ()
+producePNG pgf pgfTree = do
+  let graph = graphvizAbstractTree pgf (True, True) pgfTree
+  TIO.writeFile "ast.dot" $ T.pack graph
+  callCommand "dot -Tpng ast.dot -o ast.png"
   return ()

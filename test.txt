@@ -1,1 +1,1 @@
-2 and 3 are prime
+7 and 343 are prime

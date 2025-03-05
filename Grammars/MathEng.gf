@@ -1,4 +1,4 @@
-concrete MathEng of Math = open SyntaxEng, ParadigmsEng in {
+concrete MathEng of Math = open SyntaxEng, ParadigmsEng, SymbolicEng in {
   lincat
     Sentence = S ;
     NounPhrase = NP ;
@@ -13,8 +13,7 @@ concrete MathEng of Math = open SyntaxEng, ParadigmsEng in {
   
 
     -- Lexicon
-        Two = mkNP (mkPN ("two" | "2")) ;
-        Three = mkNP (mkPN ("three" | "3")) ;
+        NPmkInt = symb ;
         Prime = mkA "prime" ;
         Coprime = mkA "coprime" ;
         And = and_Conj ;

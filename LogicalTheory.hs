@@ -83,11 +83,8 @@ newVar term = 1 + maxVar term
 ----------------------------------------
 --- Logical Lexicon --------------------
 ----------------------------------------
-two :: LambdaTerm
-two = Const ("2", E)
-
-three :: LambdaTerm
-three = Const ("3", E)
+ltMkInt :: Int -> LambdaTerm
+ltMkInt n = Const (show n, E)
 
 prime :: LambdaTerm
 prime = Const ("prime", Arrow E T)
@@ -95,4 +92,15 @@ prime = Const ("prime", Arrow E T)
 coprime :: LambdaTerm
 coprime = Const ("coprime", Arrow (Set E) T)
 
-x = beta (App prime two)
+x = beta (App prime $ ltMkInt 5)
+
+-- Represents S^n(e) type
+snType :: Int -> ExTypes 
+snType 0 = E
+snType n = Set (snType (n-1))
+
+belongs :: Int -> LambdaTerm
+belongs n = Const ("belongs", Arrow (Arrow (snType n) (snType (n+1))) T)
+   
+
+y = bApp (bApp (belongs 0) (ltMkInt 5)) (Const ("primes", Set E))

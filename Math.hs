@@ -61,8 +61,7 @@ data Tree :: * -> * where
   GAnd :: Tree GConjunction_
   GOr :: Tree GConjunction_
   GNPconj :: GConjunction -> GNounPhrase -> GNounPhrase -> Tree GNounPhrase_
-  GThree :: Tree GNounPhrase_
-  GTwo :: Tree GNounPhrase_
+  GNPmkInt :: GInt -> Tree GNounPhrase_
   GSmkNPVP :: GNounPhrase -> GVerbPhrase -> Tree GSentence_
   GVPmkAdj :: GAdjective -> Tree GVerbPhrase_
   GString :: String -> Tree GString_
@@ -76,8 +75,7 @@ instance Eq (Tree a) where
     (GAnd,GAnd) -> and [ ]
     (GOr,GOr) -> and [ ]
     (GNPconj x1 x2 x3,GNPconj y1 y2 y3) -> and [ x1 == y1 , x2 == y2 , x3 == y3 ]
-    (GThree,GThree) -> and [ ]
-    (GTwo,GTwo) -> and [ ]
+    (GNPmkInt x1,GNPmkInt y1) -> and [ x1 == y1 ]
     (GSmkNPVP x1 x2,GSmkNPVP y1 y2) -> and [ x1 == y1 , x2 == y2 ]
     (GVPmkAdj x1,GVPmkAdj y1) -> and [ x1 == y1 ]
     (GString x, GString y) -> x == y
@@ -111,14 +109,12 @@ instance Gf GConjunction where
 
 instance Gf GNounPhrase where
   gf (GNPconj x1 x2 x3) = mkApp (mkCId "NPconj") [gf x1, gf x2, gf x3]
-  gf GThree = mkApp (mkCId "Three") []
-  gf GTwo = mkApp (mkCId "Two") []
+  gf (GNPmkInt x1) = mkApp (mkCId "NPmkInt") [gf x1]
 
   fg t =
     case unApp t of
       Just (i,[x1,x2,x3]) | i == mkCId "NPconj" -> GNPconj (fg x1) (fg x2) (fg x3)
-      Just (i,[]) | i == mkCId "Three" -> GThree 
-      Just (i,[]) | i == mkCId "Two" -> GTwo 
+      Just (i,[x1]) | i == mkCId "NPmkInt" -> GNPmkInt (fg x1)
 
 
       _ -> error ("no NounPhrase " ++ show t)
@@ -147,6 +143,7 @@ instance Gf GVerbPhrase where
 instance Compos Tree where
   compos r a f t = case t of
     GNPconj x1 x2 x3 -> r GNPconj `a` f x1 `a` f x2 `a` f x3
+    GNPmkInt x1 -> r GNPmkInt `a` f x1
     GSmkNPVP x1 x2 -> r GSmkNPVP `a` f x1 `a` f x2
     GVPmkAdj x1 -> r GVPmkAdj `a` f x1
     _ -> r t
