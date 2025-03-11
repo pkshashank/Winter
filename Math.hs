@@ -40,8 +40,12 @@ instance Gf GFloat where
 
 type GAdjective = Tree GAdjective_
 data GAdjective_
+type GCommonNoun = Tree GCommonNoun_
+data GCommonNoun_
 type GConjunction = Tree GConjunction_
 data GConjunction_
+type GDeterminer = Tree GDeterminer_
+data GDeterminer_
 type GNounPhrase = Tree GNounPhrase_
 data GNounPhrase_
 type GSentence = Tree GSentence_
@@ -57,10 +61,16 @@ data GFloat_
 
 data Tree :: * -> * where
   GCoprime :: Tree GAdjective_
+  GCountable :: Tree GAdjective_
   GPrime :: Tree GAdjective_
+  GInteger :: Tree GCommonNoun_
+  GReal_Number :: Tree GCommonNoun_
   GAnd :: Tree GConjunction_
   GOr :: Tree GConjunction_
+  GThe_Pl :: Tree GDeterminer_
+  GThe_Sg :: Tree GDeterminer_
   GNPconj :: GConjunction -> GNounPhrase -> GNounPhrase -> Tree GNounPhrase_
+  GNPmkDetCN :: GDeterminer -> GCommonNoun -> Tree GNounPhrase_
   GNPmkInt :: GInt -> Tree GNounPhrase_
   GSmkNPVP :: GNounPhrase -> GVerbPhrase -> Tree GSentence_
   GVPmkAdj :: GAdjective -> Tree GVerbPhrase_
@@ -71,10 +81,16 @@ data Tree :: * -> * where
 instance Eq (Tree a) where
   i == j = case (i,j) of
     (GCoprime,GCoprime) -> and [ ]
+    (GCountable,GCountable) -> and [ ]
     (GPrime,GPrime) -> and [ ]
+    (GInteger,GInteger) -> and [ ]
+    (GReal_Number,GReal_Number) -> and [ ]
     (GAnd,GAnd) -> and [ ]
     (GOr,GOr) -> and [ ]
+    (GThe_Pl,GThe_Pl) -> and [ ]
+    (GThe_Sg,GThe_Sg) -> and [ ]
     (GNPconj x1 x2 x3,GNPconj y1 y2 y3) -> and [ x1 == y1 , x2 == y2 , x3 == y3 ]
+    (GNPmkDetCN x1 x2,GNPmkDetCN y1 y2) -> and [ x1 == y1 , x2 == y2 ]
     (GNPmkInt x1,GNPmkInt y1) -> and [ x1 == y1 ]
     (GSmkNPVP x1 x2,GSmkNPVP y1 y2) -> and [ x1 == y1 , x2 == y2 ]
     (GVPmkAdj x1,GVPmkAdj y1) -> and [ x1 == y1 ]
@@ -85,15 +101,29 @@ instance Eq (Tree a) where
 
 instance Gf GAdjective where
   gf GCoprime = mkApp (mkCId "Coprime") []
+  gf GCountable = mkApp (mkCId "Countable") []
   gf GPrime = mkApp (mkCId "Prime") []
 
   fg t =
     case unApp t of
       Just (i,[]) | i == mkCId "Coprime" -> GCoprime 
+      Just (i,[]) | i == mkCId "Countable" -> GCountable 
       Just (i,[]) | i == mkCId "Prime" -> GPrime 
 
 
       _ -> error ("no Adjective " ++ show t)
+
+instance Gf GCommonNoun where
+  gf GInteger = mkApp (mkCId "Integer") []
+  gf GReal_Number = mkApp (mkCId "Real_Number") []
+
+  fg t =
+    case unApp t of
+      Just (i,[]) | i == mkCId "Integer" -> GInteger 
+      Just (i,[]) | i == mkCId "Real_Number" -> GReal_Number 
+
+
+      _ -> error ("no CommonNoun " ++ show t)
 
 instance Gf GConjunction where
   gf GAnd = mkApp (mkCId "And") []
@@ -107,13 +137,27 @@ instance Gf GConjunction where
 
       _ -> error ("no Conjunction " ++ show t)
 
+instance Gf GDeterminer where
+  gf GThe_Pl = mkApp (mkCId "The_Pl") []
+  gf GThe_Sg = mkApp (mkCId "The_Sg") []
+
+  fg t =
+    case unApp t of
+      Just (i,[]) | i == mkCId "The_Pl" -> GThe_Pl 
+      Just (i,[]) | i == mkCId "The_Sg" -> GThe_Sg 
+
+
+      _ -> error ("no Determiner " ++ show t)
+
 instance Gf GNounPhrase where
   gf (GNPconj x1 x2 x3) = mkApp (mkCId "NPconj") [gf x1, gf x2, gf x3]
+  gf (GNPmkDetCN x1 x2) = mkApp (mkCId "NPmkDetCN") [gf x1, gf x2]
   gf (GNPmkInt x1) = mkApp (mkCId "NPmkInt") [gf x1]
 
   fg t =
     case unApp t of
       Just (i,[x1,x2,x3]) | i == mkCId "NPconj" -> GNPconj (fg x1) (fg x2) (fg x3)
+      Just (i,[x1,x2]) | i == mkCId "NPmkDetCN" -> GNPmkDetCN (fg x1) (fg x2)
       Just (i,[x1]) | i == mkCId "NPmkInt" -> GNPmkInt (fg x1)
 
 
@@ -143,6 +187,7 @@ instance Gf GVerbPhrase where
 instance Compos Tree where
   compos r a f t = case t of
     GNPconj x1 x2 x3 -> r GNPconj `a` f x1 `a` f x2 `a` f x3
+    GNPmkDetCN x1 x2 -> r GNPmkDetCN `a` f x1 `a` f x2
     GNPmkInt x1 -> r GNPmkInt `a` f x1
     GSmkNPVP x1 x2 -> r GSmkNPVP `a` f x1 `a` f x2
     GVPmkAdj x1 -> r GVPmkAdj `a` f x1

@@ -1,7 +1,9 @@
 module FlexibleApp where
 import LogicalTheory
+import LogicalLexicon
 import Operators
-import GF.Support (err)
+import Utilities
+
 
 -- This is where we define applications.
 -- The theory being, two lambda terms are applied to each other, unless there is a type mismatch.
@@ -10,20 +12,25 @@ import GF.Support (err)
 -- Checks if the types of two terms clash when doing application 
 noTypeClash :: LambdaTerm -> LambdaTerm -> Bool
 noTypeClash t1 t2 = case (typeOf t1, typeOf t2) of
-    (Arrow t1' t2', t3') -> t1' == t3'
+    (Right (Arrow t1' t2'), Right t3') -> t1' == t3'
     _ -> False
+
+appWithNoTypeClash ::  LambdaTerm ->  LambdaTerm -> Either String LambdaTerm
+appWithNoTypeClash t1 t2
+  | noTypeClash t1 t2 = Right (bApp t1 t2)
+  | otherwise = Left "Type Mismatch"
+
 
 -- Applies term t1 to t2 each other.
 -- First tries t1 t2, then t2 t1.
 -- Then prints an error if none of them is possible
-unorderedApp :: LambdaTerm -> LambdaTerm -> Maybe LambdaTerm
-unorderedApp t1 t2
-  | noTypeClash t1 t2 = Just (bApp t1 t2)
-  | noTypeClash t2 t1 = Just (bApp t2 t1)
-  | otherwise = Nothing
+flexApp :: Either String LambdaTerm -> Either String LambdaTerm -> Either String LambdaTerm
+flexApp t1 t2
+  | Right t1' <- t1, Right t2' <- t2 = appWithNoTypeClash t1' t2' <||> 
+    appWithNoTypeClash t2' t1' <||> 
+    existentialRaise t2' t1' <||> 
+    existentialRaise t1' t2' <||>
+    Left "Application Failed, tried E"
+  | otherwise = Left "One of the lambda terms is wrong in flexApp"
+    
 
-
-flexApp :: LambdaTerm -> LambdaTerm -> LambdaTerm
-flexApp t1 t2 = case unorderedApp t1 t2 of
-    Just t -> t
-    Nothing -> error "Unordered Application failed"

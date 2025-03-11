@@ -1,4 +1,5 @@
 {-# LANGUAGE GADTs #-}
+
 module LogicalTheory where
 
 data ExTypes where
@@ -16,6 +17,12 @@ isBooleanType t = case t of
     Arrow _ t1 -> isBooleanType t1
     _ -> False
 
+isValueType :: ExTypes -> Bool
+isValueType t = case t of
+    T -> True
+    Arrow _ T -> True
+    _ -> False
+
 
 data LambdaTerm where
     Var :: (Int, ExTypes) -> LambdaTerm
@@ -27,16 +34,19 @@ data LambdaTerm where
     deriving (Eq, Show)
 
 -- Returning the type of a term
-typeOf :: LambdaTerm -> ExTypes
-typeOf term = case term of
-    Var (_, t) -> t
-    App t1 t2 -> case typeOf t1 of
-        (Arrow t1' t2') -> if t1' == typeOf t2 then t2' else error "Function type mismatch"
-        _ -> error "Not a function type"
-    Lam (_, t) t1 -> Arrow t (typeOf t1)
-    Const (_, t) -> t
-    ForAll (_, t) t1 -> T
-    Exists (_, t) t1 -> T
+typeOf :: LambdaTerm -> Either String ExTypes
+typeOf (Var (_, t))     = Right t
+typeOf (Const (_, t))   = Right t
+typeOf (Lam (_, t) t1)  = Arrow t <$> typeOf t1
+typeOf (ForAll _ t1)    = typeOf t1 *> Right T
+typeOf (Exists _ t1)    = typeOf t1 *> Right T
+typeOf (App t1 t2)      = case typeOf t1 of
+    Right (Arrow t1' t2') -> if typeOf t2 == Right t1'
+                             then Right t2'
+                             else Left "Function type mismatch"
+    _ -> Left "Left argument not a function"
+
+
 
 -- Capture-avoiding substitution of a variable x with a term s in a term t
 subst :: LambdaTerm -> Int -> LambdaTerm -> LambdaTerm
@@ -50,16 +60,21 @@ subst t x s = case t of
 
 
 -- One-step beta reduction
-oneBeta :: LambdaTerm -> LambdaTerm
-oneBeta term = case term of
-    App (Lam (x, _) t1) t2 -> subst t1 x t2
-    _ -> term
+oneBeta :: LambdaTerm ->  LambdaTerm
+oneBeta term@(App (Lam (x, tx) t1) t2)
+    | typeOf t2 == Right tx = subst t1 x t2
+    | otherwise             = term
+oneBeta term = term
+
 
 -- Beta reduction
 beta :: LambdaTerm -> LambdaTerm
 beta term = let term' = oneBeta term in
-                        if term == term' then term else beta term'
+                        if  term == term' then term else beta term'
 
+betaError :: Either String LambdaTerm -> Either String LambdaTerm
+betaError (Right t) = Right (beta t)
+betaError (Left s) = Left s
 -- Application with beta reduction
 bApp :: LambdaTerm -> LambdaTerm -> LambdaTerm
 bApp t1 t2 = beta (App t1 t2)
@@ -78,29 +93,3 @@ maxVar term = case term of
 -- Given a lambda term, find a new variable that is not used in the term
 newVar :: LambdaTerm -> Int
 newVar term = 1 + maxVar term
-
-
-----------------------------------------
---- Logical Lexicon --------------------
-----------------------------------------
-ltMkInt :: Int -> LambdaTerm
-ltMkInt n = Const (show n, E)
-
-prime :: LambdaTerm
-prime = Const ("prime", Arrow E T)
-
-coprime :: LambdaTerm
-coprime = Const ("coprime", Arrow (Set E) T)
-
-x = beta (App prime $ ltMkInt 5)
-
--- Represents S^n(e) type
-snType :: Int -> ExTypes 
-snType 0 = E
-snType n = Set (snType (n-1))
-
-belongs :: Int -> LambdaTerm
-belongs n = Const ("belongs", Arrow (Arrow (snType n) (snType (n+1))) T)
-   
-
-y = bApp (bApp (belongs 0) (ltMkInt 5)) (Const ("primes", Set E))

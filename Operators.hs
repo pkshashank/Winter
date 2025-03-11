@@ -1,109 +1,146 @@
-{-# LANGUAGE ImplicitParams #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Redundant bracket" #-}
+
 
 module Operators where
+import LogicalLexicon
 import LogicalTheory
 import PrettyPrinter
 
 -- Propositional Logic Operators
-andT :: LambdaTerm
-andT = Const ("and", Arrow T (Arrow T T))
+andT :: LambdaTerm -> LambdaTerm -> Either String LambdaTerm
+andT x y
+    | typeOf x == Right T, typeOf y == Right T = Right $ App (App (Const ("&", Arrow T (Arrow T T))) x) y
+    | otherwise                                = Left "Types not T for and"
 
-orT :: LambdaTerm
-orT = Const ("or", Arrow T (Arrow T T))
 
-negT :: LambdaTerm
-negT = Const ("neg", Arrow T T)
+orT :: LambdaTerm -> LambdaTerm -> Either String LambdaTerm
+orT x y
+    | typeOf x == Right T, typeOf y == Right T = Right $ App (App (Const ("|", Arrow T (Arrow T T))) x) y
+    | otherwise                                = Left "Types not T for or"
 
-impT :: LambdaTerm
-impT = Const ("imp", Arrow T (Arrow T T))
+negT :: LambdaTerm -> Either String LambdaTerm
+negT x
+    | typeOf x == Right T = Right $ App (Const ("¬", Arrow T T)) x
+    | otherwise           = Left "Type not T for not"
 
+
+impT :: LambdaTerm -> LambdaTerm -> Either String LambdaTerm
+impT x y
+    | typeOf x == Right T, typeOf y == Right T = Right $ App (App (Const ("->", Arrow T (Arrow T T))) x) y
+    | otherwise                                = Left "Types not T for imp"
 
 
 -- Montague Raising Operator
-m :: LambdaTerm -> LambdaTerm
-m x =  let tp = Arrow (typeOf x) T in
-                    let p = newVar x
-                  in Lam (p, tp) (App (Var (p, tp)) x)
+m :: LambdaTerm -> Either String LambdaTerm
+m x = case typeOf x of
+    Right tx -> let p =  newVar x
+                in let tp = (Arrow tx T)
+                in Right $ Lam (p, tp) (App (Var (p, tp)) x)
+    Left _ -> Left "Type not found"
 
+
+-- Whether both types are boolean types and are same
 booleanOperationPossible :: LambdaTerm -> LambdaTerm -> Bool
 booleanOperationPossible l1 l2 = case (typeOf l1, typeOf l2) of
-    (t1, t2) -> t1 == t2 && isBooleanType t1 && isBooleanType t2
+    (Right t1, Right t2) -> isBooleanType t1 && isBooleanType t2 && t1 == t2
+    _ -> False
 
 
 -- Polymorphic Boolean Operators
-meet :: LambdaTerm -> LambdaTerm -> LambdaTerm
-meet l1 l2 =  if booleanOperationPossible l1 l2
-                    then case (typeOf l1, typeOf l2) of
-                        (T, T) -> bApp (bApp andT l1) l2
-                        (t1, t2) -> let z = newVar (App l1 l2)
-                                    in case t1 of
-                                        Arrow sig1 sig2 -> Lam (z, sig1) (meet (bApp l1 (Var (z, sig1))) (bApp l2 (Var (z, sig1))))
-                                        _ -> error "Types boolean and same type, but not arrow" -- This should never happen as we have already checked for boolean types
+meet :: LambdaTerm -> LambdaTerm -> Either String LambdaTerm
+meet l1 l2
+    | typeOf l1 == Right T = andT l1 l2
+    | Right (Arrow sig1 sig2) <- typeOf l1 = let z = newVar (App l1 l2)
+        in Lam (z, sig1) <$> meet (bApp l1 (Var (z, sig1))) (bApp l2 (Var (z, sig1)))
+    | otherwise = Left "Check dfn of meet, this should never happen"
 
-                            else
-                                error "Boolean Operation not possible"
+join :: LambdaTerm -> LambdaTerm -> Either String LambdaTerm
+join l1 l2
+    | typeOf l1 == Right T = orT l1 l2
+    | Right (Arrow sig1 sig2) <- typeOf l1 = let z = newVar (App l1 l2)
+        in Lam (z, sig1) <$> join (bApp l1 (Var (z, sig1))) (bApp l2 (Var (z, sig1)))
+    | otherwise = Left "Check dfn of join, this should never happen"
 
+neg :: LambdaTerm -> Either String LambdaTerm
+neg l
+    |  Right t <- typeOf l, not (isBooleanType t) = Left "Not boolean type"
+    | typeOf l == Right T = negT l
+    | Right (Arrow sig1 sig2) <- typeOf l =
+        let z = newVar l
+        in Lam (z, sig1) <$> neg (bApp l (Var (z, sig1)))
+    | otherwise = Left "Check dfn of not, this should never happen"
 
-join :: LambdaTerm -> LambdaTerm -> LambdaTerm
-join l1 l2 = if booleanOperationPossible l1 l2
-                    then case (typeOf l1, typeOf l2) of
-                        (T, T) -> bApp (bApp orT l1) l2
-                        (t1, t2) -> let z = newVar (App l1 l2)
-                                    in case t1 of
-                                        Arrow sig1 sig2 -> Lam (z, sig1) (join (bApp l1 (Var (z, sig1))) (bApp l2 (Var (z, sig1))))
-                                        _ -> error "Types boolean and same type, but not arrow" -- This should never happen as we have already checked for boolean types
-
-                            else
-                                error "Boolean Operation not possible"
-
-
-neg :: LambdaTerm -> LambdaTerm
-neg l = if isBooleanType (typeOf l) then
-            case typeOf l of
-                T -> bApp negT l
-                t -> let z = newVar l
-                    in case t of
-                        Arrow sig1 sig2 -> Lam (z, sig1) (neg (bApp l (Var (z, sig1))))
-                        _ -> error "Types boolean and same type, but not arrow" -- This should never happen as we have already checked for boolean types
-        else
-            error "Negation not possible"
-
-imp :: LambdaTerm -> LambdaTerm -> LambdaTerm
-imp l1 l2 = if booleanOperationPossible l1 l2 then
-                case (typeOf l1, typeOf l2) of
-                    (T, T) -> bApp (bApp impT l1) l2
-                    (t1, t2) -> let z = newVar (App l1 l2)
-                                in case t1 of
-                                    Arrow sig1 sig2 -> ForAll (z, sig1) (imp (bApp l1 (Var (z, sig1))) (bApp l2 (Var (z, sig1))))
-                                    _ -> error "Types boolean and same type, but not arrow" -- This should never happen as we have already checked for boolean types
-            else
-                error "Boolean Operation not possible"
-
-zero :: ExTypes -> LambdaTerm
-zero t = meet (neg (Var (0, t))) (Var (0, t))
-
-one :: ExTypes -> LambdaTerm
-one t = join (neg (Var (0, t))) (Var (0, t))
+imp :: LambdaTerm -> LambdaTerm -> Either String LambdaTerm
+imp l1 l2
+    | typeOf l1 == Right T = impT l1 l2
+    | Right (Arrow sig1 sig2) <- typeOf l1 = let z = newVar (App l1 l2)
+        in ForAll (z, sig1) <$> imp (bApp l1 (Var (z, sig1))) (bApp l2 (Var (z, sig1)))
+    | otherwise = Left "Check dfn of imp, this should never happen"
 
 
-meetMontague :: LambdaTerm -> LambdaTerm -> LambdaTerm
+
+meetMontague :: LambdaTerm -> LambdaTerm -> Either String LambdaTerm
 meetMontague l1 l2
-  | booleanOperationPossible l1 l2 = meet l1 l2
-  | booleanOperationPossible (m l1) l2 = meet (m l1) l2
-  | booleanOperationPossible l1 (m l2) = meet l1 (m l2)
-  | otherwise = meet (m l1) (m l2)
+    | booleanOperationPossible l1 l2 = meet l1 l2
+    | Right ml1 <- m l1,  booleanOperationPossible (ml1) l2 = meet (ml1) l2
+    | Right ml2 <- m l2, booleanOperationPossible l1 ml2 = meet l1 ml2
+    | Right ml1 <- m l1, Right ml2 <- m l2 = meet ml1 ml2
 
-joinMontague :: LambdaTerm -> LambdaTerm -> LambdaTerm
+joinMontague :: LambdaTerm -> LambdaTerm -> Either String LambdaTerm
 joinMontague l1 l2
-  | booleanOperationPossible l1 l2 = join l1 l2
-  | booleanOperationPossible (m l1) l2 = join (m l1) l2
-  | booleanOperationPossible l1 (m l2) = join l1 (m l2)
-  | otherwise = join (m l1) (m l2)
+    | booleanOperationPossible l1 l2 = join l1 l2
+    | Right ml1 <- m l1,  booleanOperationPossible (ml1) l2 = join (ml1) l2
+    | Right ml2 <- m l2, booleanOperationPossible l1 ml2 = join l1 ml2
+    | Right ml1 <- m l1, Right ml2 <- m l2 = join ml1 ml2
+
+-- Set Theoretic Operators
+belongs :: LambdaTerm -> LambdaTerm -> Either String LambdaTerm
+belongs x y 
+    | Right t <- typeOf x, Right (Set t') <- typeOf y, t == t' = Right $ bApp (bApp (Const ("∈", Arrow t (Arrow (Set t) T))) x) y
+    | otherwise = Left "∈ not defined for these types"
+
+subseteq :: LambdaTerm -> LambdaTerm -> Either String LambdaTerm
+subseteq x y
+    | Right (Set t) <- typeOf x, Right (Set t') <- typeOf y, t == t' = Right $ bApp (bApp (Const ("⊆", Arrow (Set t) (Arrow (Set t) T))) x) y
+    | otherwise = Left "⊆ not defined for these types"
 
 
+--upArrow which maps a set to the corresponding characteristic function
+upArrow :: LambdaTerm -> Either String LambdaTerm
+upArrow q = case typeOf q of
+    Right (Set t) -> do
+        let x = newVar q
+        b' <- belongs (Var (x, t)) q
+        Right $ Lam (x, t) b'
+    _ -> Left "Type not Set"
+
+min :: Either String LambdaTerm -> Either String LambdaTerm -> Either String LambdaTerm
+min p a 
+    | Right p' <- p , Right a' <- a = case (typeOf p', typeOf a') of
+        (Right (Arrow (Arrow E T) T), Right (Set E)) -> do
+            upA <- upArrow a'
+            let b = newVar (App p' a')
+            upB <- upArrow (Var (b, Set E))
+            subBA <- subseteq a' (Var (b, Set E))
+            bod <- impT (bApp p' upB) subBA
+            andT (bApp p' upA) (ForAll (b, Set E) bod)
+        _ -> Left "Can't apply min to these types"
+    | otherwise = Left "Not Lambda Terms for min"
+
+existentialRaise :: LambdaTerm -> LambdaTerm -> Either String LambdaTerm
+existentialRaise q p 
+    | Right (Arrow (Arrow E T) T) <- typeOf q, Right (Arrow (Set E) T) <- typeOf p = do
+        let x = newVar (App p q)
+        mnq <- Operators.min (Right q) (Right (Var (x, Set E)))
+        bod <- andT (bApp p (Var (x, Set E))) mnq
+        Right $ Exists (x, Set E) bod
+    | otherwise = Left "Can't apply E to these types"
 
 
---min :: LambdaTerm -> LambdaTerm -> LambdaTerm -- Type: ((S^n(e) t) t) (S^(n+1)(e) t)
---min l1 l2 = case (typeOf l1, typeOf l2) of
---    Arrow (snType n) t, Arrow (snType (n+1)) t -> meetMontague l1 l2
---   _ -> error "Types do not match"
+extract :: Either String LambdaTerm -> LambdaTerm
+extract (Right t) = t
+extract (Left s) = error s
+
+y :: LambdaTerm
+y = bApp (Lam (1, E) (extract $ belongs (Var (1, E)) set1)) two

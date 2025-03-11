@@ -1,1 +1,1 @@
-7 and 343 are prime
+3 and 5 are coprime
