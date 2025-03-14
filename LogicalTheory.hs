@@ -12,8 +12,8 @@ data ExTypes where
 instance Show ExTypes where
     show E = "e"
     show T = "t"
-    show (Arrow t1 t2) = "(" ++ show t1 ++ " -> " ++ show t2 ++ ")"
-    show (Set t) = "(S" ++ show t ++ ")"
+    show (Arrow t1 t2) = "(" ++ show t1 ++ show t2 ++ ")"
+    show (Set t) = "S" ++ show t
 
 
 -- checks if a type is a boolean type
@@ -40,12 +40,23 @@ data LambdaTerm where
     deriving (Eq)
 
 instance Show LambdaTerm where
+    show (App (App op l1) l2) = if isInfix op then "(" ++ show l1 ++ " " ++ show op ++ " " ++ show l2 ++ ")" else "(" ++ show op ++ " " ++ show l1 ++ " " ++ show l2 ++ ")"
     show (Var (x, _)) = "x" ++ show x
     show (App t1 t2) = "(" ++ show t1 ++ " " ++ show t2 ++ ")"
-    show (Lam (x, t) t1) = "(λ" ++ "x" ++ show x  ++ ":" ++ show t ++ " " ++ show t1 ++ ")"
+    show (Lam (x, t) t1) = "(λ" ++ "x" ++ show x  ++ ":" ++ show t ++ "." ++ show t1 ++ ")"
     show (Const (x, t)) = x
-    show (ForAll (x, t) t1) = "(∀" ++ "x" ++  show x ++ ":" ++ show t ++ " " ++ show t1 ++ ")"
-    show (Exists (x, t) t1) = "(∃" ++ "x" ++ show x ++ ":" ++ show t ++ " " ++ show t1 ++ ")"
+    show (ForAll (x, t) t1) = "(∀" ++ "x" ++  show x ++ ":" ++ show t ++ "." ++ show t1 ++ ")"
+    show (Exists (x, t) t1) = "(∃" ++ "x" ++ show x ++ ":" ++ show t ++ "." ++ show t1 ++ ")"
+
+
+isInfix :: LambdaTerm -> Bool
+isInfix (Const ("&", Arrow T (Arrow T T))) = True
+isInfix (Const ("|", Arrow T (Arrow T T))) = True
+isInfix (Const ("->", Arrow T (Arrow T T))) = True
+isInfix (Const ("∈", Arrow _ (Arrow (Set _) T))) = True
+isInfix (Const ("⊆", Arrow (Set _) (Arrow (Set _) T))) = True
+isInfix _ = False
+
 
 -- Returning the type of a term
 typeOf :: LambdaTerm -> Either String ExTypes
@@ -78,7 +89,12 @@ oneBeta :: LambdaTerm ->  LambdaTerm
 oneBeta term@(App (Lam (x, tx) t1) t2)
     | typeOf t2 == Right tx = subst t1 x t2
     | otherwise             = term
-oneBeta term = term
+oneBeta (App t1 t2) = App (oneBeta t1) (oneBeta t2)
+oneBeta (Lam (x, tx) t1) = Lam (x, tx) (oneBeta t1)
+oneBeta (ForAll (x, tx) t1) = ForAll (x, tx) (oneBeta t1)
+oneBeta (Exists (x, tx) t1) = Exists (x, tx) (oneBeta t1)
+oneBeta (Var (x, tx)) = Var (x, tx)
+oneBeta (Const (x, tx)) = Const (x, tx)
 
 
 -- Beta reduction

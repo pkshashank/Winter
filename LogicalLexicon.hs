@@ -10,10 +10,9 @@ prime = Const ("prime", Arrow E T)
 coprime :: LambdaTerm
 coprime = Const ("coprime", Arrow (Set E) T)
 
-y = App (Lam (1, E) (App prime (Var (1, E)))) five
-x1 = beta y
-x2 = bApp (Lam (1, E) (App prime (Var (1, E)))) five
-x3 = betaError $ Right y
+countable :: LambdaTerm
+countable = Const ("countable", Arrow (Set E) T)
+
 
 
 integer :: LambdaTerm
@@ -28,6 +27,7 @@ five = ltMkInt 5
 two :: LambdaTerm
 two = ltMkInt 2
 
+-- Example sets for testing
 set1 :: LambdaTerm
 set1 = Const ("{1,2,3}", Set E)
 

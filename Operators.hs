@@ -6,6 +6,7 @@ module Operators where
 import LogicalLexicon
 import LogicalTheory
 
+
 -- Propositional Logic Operators
 andT :: LambdaTerm -> LambdaTerm -> Either String LambdaTerm
 andT x y

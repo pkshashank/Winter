@@ -28,7 +28,7 @@ flexApp :: Either String LambdaTerm -> Either String LambdaTerm -> Either String
 flexApp t1 t2
   | Right t1' <- t1, Right t2' <- t2 = appWithNoTypeClash t1' t2' <||> 
     appWithNoTypeClash t2' t1' <||> 
-    existentialRaise t2' t1' <||> 
+    existentialRaise t2' t1' <||> -- this is used in the coprime example
     existentialRaise t1' t2' <||>
     Left "Application Failed, tried E"
   | otherwise = Left "One of the lambda terms is wrong in flexApp"

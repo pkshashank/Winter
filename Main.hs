@@ -23,13 +23,13 @@ main = do
   putStr "\n1. PARSE TREE (ast.png): \n"
   putStrLn (showExpr [mkCId "Sentence"] pgfTree)
   let haskellTree = Math.fg pgfTree :: Math.GSentence
-  putStrLn "\n2. Performing semantic translation...\n"
+  putStrLn "\n2. PERFORMING SEMANTIC ANALYSIS...\n"
 
   formula <- translate haskellTree
   putStr "\n3. TRANSLATED FORMULA: \n "
   case formula of
     Left err -> print err
-    Right f -> print $ beta f
+    Right f -> print f
   return ()
 
 
