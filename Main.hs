@@ -2,11 +2,10 @@ import PGF
 import Math
 import Data.Maybe (fromJust)
 import Translation
-import PrettyPrinter (prettyPrint)
 import System.Process (callCommand)
 import qualified Data.Text.Lazy as T
 import qualified Data.Text.Lazy.IO as TIO
-import LogicalTheory 
+import LogicalTheory
 
 
 
@@ -20,15 +19,17 @@ main = do
 
   let pgfTree = head $ parse pgf lang (fromJust $ readType "Sentence") content
   producePNG pgf pgfTree
-  
+
   putStr "\n1. PARSE TREE (ast.png): \n"
   putStrLn (showExpr [mkCId "Sentence"] pgfTree)
   let haskellTree = Math.fg pgfTree :: Math.GSentence
   putStrLn "\n2. Performing semantic translation...\n"
-  
+
   formula <- translate haskellTree
   putStr "\n3. TRANSLATED FORMULA: \n "
-  putStrLn $ prettyPrint formula
+  case formula of
+    Left err -> print err
+    Right f -> print $ beta f
   return ()
 
 

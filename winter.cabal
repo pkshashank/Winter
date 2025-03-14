@@ -17,7 +17,6 @@ executable Translate
     LogicalTheory
     LogicalLexicon
     Translation
-    PrettyPrinter
     Operators
     FlexibleApp
     Utilities

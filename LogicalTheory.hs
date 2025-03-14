@@ -7,7 +7,13 @@ data ExTypes where
   T :: ExTypes
   Arrow :: ExTypes -> ExTypes -> ExTypes
   Set :: ExTypes -> ExTypes
-    deriving (Eq, Show)
+    deriving (Eq)
+
+instance Show ExTypes where
+    show E = "e"
+    show T = "t"
+    show (Arrow t1 t2) = "(" ++ show t1 ++ " -> " ++ show t2 ++ ")"
+    show (Set t) = "(S" ++ show t ++ ")"
 
 
 -- checks if a type is a boolean type
@@ -31,7 +37,15 @@ data LambdaTerm where
     Const :: (String, ExTypes) -> LambdaTerm
     ForAll :: (Int, ExTypes) -> LambdaTerm -> LambdaTerm
     Exists :: (Int, ExTypes) -> LambdaTerm -> LambdaTerm
-    deriving (Eq, Show)
+    deriving (Eq)
+
+instance Show LambdaTerm where
+    show (Var (x, _)) = "x" ++ show x
+    show (App t1 t2) = "(" ++ show t1 ++ " " ++ show t2 ++ ")"
+    show (Lam (x, t) t1) = "(λ" ++ "x" ++ show x  ++ ":" ++ show t ++ " " ++ show t1 ++ ")"
+    show (Const (x, t)) = x
+    show (ForAll (x, t) t1) = "(∀" ++ "x" ++  show x ++ ":" ++ show t ++ " " ++ show t1 ++ ")"
+    show (Exists (x, t) t1) = "(∃" ++ "x" ++ show x ++ ":" ++ show t ++ " " ++ show t1 ++ ")"
 
 -- Returning the type of a term
 typeOf :: LambdaTerm -> Either String ExTypes

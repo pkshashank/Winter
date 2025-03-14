@@ -5,7 +5,6 @@
 module Operators where
 import LogicalLexicon
 import LogicalTheory
-import PrettyPrinter
 
 -- Propositional Logic Operators
 andT :: LambdaTerm -> LambdaTerm -> Either String LambdaTerm

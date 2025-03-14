@@ -5,7 +5,7 @@ import LogicalLexicon
 import Math
 import Operators
 import FlexibleApp
-import PrettyPrinter (Printable(prettyPrint))
+
 
 
 translateLexicon :: Math.Tree a -> IO LambdaTerm
@@ -25,7 +25,7 @@ translate expr = case expr of
     GSmkNPVP np vp -> do
                         Right rawNP <- translate np
                         Right rawVP <- translate vp
-                        putStrLn ("S := Applying NP: " ++ prettyPrint rawNP ++ " and VP: " ++ prettyPrint rawVP ++ " getting " ++ prettyPrint (flexApp (Right rawVP) (Right rawNP)))
+                        putStrLn ("S := Applying NP: " ++ show rawNP ++ " and VP: " ++ show rawVP ++ " getting " ++ show (flexApp (Right rawVP) (Right rawNP)))
                         return $ flexApp (Right rawVP) (Right rawNP)
 
     GNPconj conj np1 np2 -> do
@@ -34,7 +34,7 @@ translate expr = case expr of
                             let (op, label) = case conj of
                                     GAnd -> (meetMontague, "meet")
                                     GOr  -> (joinMontague, "join")
-                            putStrLn $ "NP := " ++ label ++ " of NP1: " ++ prettyPrint rawNP1 ++ " and NP2: " ++  prettyPrint rawNP2 ++ " getting " ++ prettyPrint (op rawNP1 rawNP2)
+                            putStrLn $ "NP := " ++ label ++ " of NP1: " ++ show rawNP1 ++ " and NP2: " ++  show rawNP2 ++ " getting " ++ show (op rawNP1 rawNP2)
                             return (op rawNP1 rawNP2)
 
     GNPmkInt i -> Right <$> translateLexicon i
