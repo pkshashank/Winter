@@ -15,13 +15,6 @@ I: 2 and 3 are prime
 O:"((and (prime 2)) (prime 3))"
 
 
-I : 2 or 3 is prime
+I : 7 and 8 are coprime
 
-O: "((or (prime 2)) (prime 3))"
-
-
-I: 2 and 3 or 2 are prime
-
-O: "((and (prime 2)) ((or (prime 3)) (prime 2)))"
-
-
+O: "(∃x3:Se.((coprime x3) & (((7 ∈ x3) & (8 ∈ x3)) & (∀x4:Se.(((7 ∈ x4) & (8 ∈ x4)) -> (x3 ⊆ x4))))))"
