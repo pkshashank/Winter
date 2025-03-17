@@ -18,6 +18,7 @@ translateLexicon expr =
             GInt i -> print (ltMkInt i) >> return (ltMkInt i)
             GInteger -> print integer >> return integer
             GReal_Number -> print realNumber >> return realNumber
+            GCountable -> print countable >> return countable
 
 
 translate :: Math.Tree a -> IO (Either String LambdaTerm)
@@ -36,6 +37,12 @@ translate expr = case expr of
                                     GOr  -> (joinMontague, "join")
                             putStrLn $ "NP := " ++ label ++ " of NP1: " ++ show rawNP1 ++ " and NP2: " ++  show rawNP2 ++ " getting " ++ show (op rawNP1 rawNP2)
                             return (op rawNP1 rawNP2)
+    GNPmkDetCN det cn -> do
+                            Right rawCN <- translate cn
+                            case det of
+                                    GThe_Pl -> print  "plural The" 
+                                    GThe_Sg -> print "singular The"
+                            return (Left "not implemented")
 
     GNPmkInt i -> Right <$> translateLexicon i
 

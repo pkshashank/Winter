@@ -138,9 +138,14 @@ existentialRaise q p
     | otherwise = Left "Can't apply E to these types"
 
 
-extract :: Either String LambdaTerm -> LambdaTerm
-extract (Right t) = t
-extract (Left s) = error s
-
-y :: LambdaTerm
-y = bApp (Lam (1, E) (extract $ belongs (Var (1, E)) set1)) two
+pl :: LambdaTerm -> Either String LambdaTerm
+pl p 
+    | Right (Arrow E T) <- typeOf p = do
+        let q = newVar p
+        let x = newVar (App p (Var (q, Set E)))
+        neqstm <- neq (Var (q, Set E)) (emptySet (Set E))
+        belStm <- belongs (Var (x, E)) (Var (q, Set E))
+        impStm <- impT belStm (bApp p (Var (x, E)))
+        andStm <- andT neqstm (ForAll (x, E) impStm)
+        Right $ Lam (q, Set E) andStm
+    | otherwise = Left "Can't apply plural operator to this type"
