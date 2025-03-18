@@ -105,6 +105,11 @@ subseteq x y
     | Right (Set t) <- typeOf x, Right (Set t') <- typeOf y, t == t' = Right $ bApp (bApp (Const ("⊆", Arrow (Set t) (Arrow (Set t) T))) x) y
     | otherwise = Left "⊆ not defined for these types"
 
+eq :: LambdaTerm -> LambdaTerm -> Either String LambdaTerm
+eq x y
+    | Right t <- typeOf x, Right t' <- typeOf y, t == t' = Right $ bApp (bApp (Const ("=", Arrow t (Arrow t T))) x) y
+    | otherwise = Left "= not defined for these types"
+
 
 --upArrow which maps a set to the corresponding characteristic function
 upArrow :: LambdaTerm -> Either String LambdaTerm
@@ -122,9 +127,11 @@ min p a
             upA <- upArrow a'
             let b = newVar (App p' a')
             upB <- upArrow (Var (b, Set E))
-            subBA <- subseteq a' (Var (b, Set E))
-            bod <- impT (bApp p' upB) subBA
-            andT (bApp p' upA) (ForAll (b, Set E) bod)
+            eqAB <- eq a' (Var (b, Set E))
+            subBA <- subseteq (Var (b, Set E)) a'
+            andBod <- andT (bApp p' upB) subBA
+            impBod <- impT andBod eqAB
+            andT (bApp p' upA) (ForAll (b, Set E) impBod)
         _ -> Left "Can't apply min to these types"
     | otherwise = Left "Not Lambda Terms for min"
 
