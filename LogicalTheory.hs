@@ -56,6 +56,7 @@ isInfix (Const ("->", Arrow T (Arrow T T))) = True
 isInfix (Const ("∈", Arrow _ (Arrow (Set _) T))) = True
 isInfix (Const ("⊆", Arrow (Set _) (Arrow (Set _) T))) = True
 isInfix (Const ("≠", Arrow _ (Arrow _ T))) = True
+isInfix (Const ("=", Arrow _ (Arrow _ T))) = True
 isInfix _ = False
 
 
