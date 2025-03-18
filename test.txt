@@ -1,1 +1,1 @@
-7 and 8 are coprime
+3 and 4 or 6 are coprime
