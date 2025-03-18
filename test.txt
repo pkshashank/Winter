@@ -1,1 +1,1 @@
-3 and 4 are coprime
+3 and 4 and 5 are prime
