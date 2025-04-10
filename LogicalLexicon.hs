@@ -22,10 +22,10 @@ neq l1 l2
     | otherwise = Left "≠ not defined for these types"
 
 integer :: LambdaTerm
-integer = Const ("Z", Set E)
+integer = Const ("Z", Arrow E T)
 
 realNumber :: LambdaTerm
-realNumber = Const ("R", Set E)
+realNumber = Const ("R", Arrow E T)
 
 five :: LambdaTerm
 five = ltMkInt 5
