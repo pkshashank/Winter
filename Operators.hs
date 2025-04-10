@@ -156,3 +156,13 @@ pl p
         andStm <- andT neqstm (ForAll (x, E) impStm)
         Right $ Lam (q, Set E) andStm
     | otherwise = Left "Can't apply plural operator to this type"
+
+max :: LambdaTerm -> LambdaTerm -> Either String LambdaTerm
+max y p 
+    | Right (Set E) <- typeOf y, Right (Arrow (Set E) T) <- typeOf p = do
+        let x = newVar (App p y)
+        subBod <- subseteq (Var (x, Set E)) (Var (x, Set E))
+        impBod <- impT (bApp p (Var (x, Set E))) subBod
+        andBod <- andT (bApp p y) (ForAll (x, Set E) impBod)
+        Right andBod
+    | otherwise = Left "Can't apply max to these types"
